@@ -1,6 +1,5 @@
 import streamlit as st
 from openai import OpenAI
-import os
 
 # 페이지 기본 설정
 st.set_page_config(
@@ -10,14 +9,10 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# API 키 설정 (secrets.toml에서 로드)
-os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
-
-client = OpenAI()
-
-
 # API 호출 함수
-def call_love_decoder(user_text, model="gpt-5-nano"):
+def call_love_decoder(user_text, api_key, model="gpt-5-nano"):
+    # 입력받은 API 키로 클라이언트 생성
+    client = OpenAI(api_key=api_key)
 
     system_instruction = """
 # Role (페르소나)
@@ -46,28 +41,28 @@ def call_love_decoder(user_text, model="gpt-5-nano"):
 - **점수**: '재결합 가능성'을 0%~100% 사이의 확률로 냉정하게 계산해서 보여줘.
 """
 
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "developer", "content": system_instruction},
-            {"role": "user", "content": user_text},
-        ],
-        response_format={"type": "text"},
-        verbosity="medium",
-        reasoning_effort="low",
-        store=False,
-    )
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "developer", "content": system_instruction},
+                {"role": "user", "content": user_text},
+            ],
+            response_format={"type": "text"},
+            store=False,
+            verbosity="medium",
+            reasoning_effort="low",
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"오류가 발생했습니다: {str(e)}"
 
-    return response.choices[0].message.content
-
-
-# CSS 스타일 적용 (다크모드 문제 해결됨)
+# CSS 스타일 적용
 st.markdown(
     """
 <style>
 .stTextArea textarea {
     font-size: 16px;
-    /* background-color: #f0f2f6;  <-- 이 부분을 삭제하여 다크모드와 호환되게 수정 */
 }
 </style>
 """,
@@ -78,6 +73,16 @@ st.markdown(
 # 사이드바 구성
 with st.sidebar:
     st.title("💔 희망고문 박멸")
+    
+    # API 키 입력 필드 추가
+    st.subheader("🔑 설정")
+    openai_api_key = st.text_input(
+        "OpenAI API Key 입력", 
+        type="password", 
+        placeholder="sk-..."
+    )
+    st.caption("키는 저장되지 않으며 1회성으로만 사용됩니다.")
+    
     st.markdown("---")
     st.markdown(
         """
@@ -97,7 +102,6 @@ with st.sidebar:
 # 메인 화면 구성
 col_header1, col_header2 = st.columns([1, 5])
 with col_header1:
-    # 이미지 경로가 깨질 경우를 대비해 이모지로 대체 (안전성 확보)
     st.markdown("# 💔")
 with col_header2:
     st.title("재결합 가능성 판독기")
@@ -147,16 +151,18 @@ with col_result:
     st.subheader("📋 부검 결과 리포트")
 
     if analyze_btn:
-        if user_input_text.strip():
+        # API 키 입력 여부 확인
+        if not openai_api_key:
+            st.error("🚨 사이드바에서 OpenAI API 키를 먼저 입력해주세요!")
+        elif not user_input_text.strip():
+            st.warning("분석할 문자를 입력해주세요! 빈 화면을 분석할 순 없잖아요? 🤷")
+        else:
             with st.spinner("💉 텍스트 속 찌질함 추출 중..."):
-                # 실제 API 호출
-                result = call_love_decoder(user_input_text)
+                result = call_love_decoder(user_input_text, openai_api_key)
 
             st.success("분석이 완료되었습니다!")
             with st.container(border=True):
                 st.markdown(result)
-        else:
-            st.warning("분석할 문자를 입력해주세요! 빈 화면을 분석할 순 없잖아요? 🤷")
     else:
         st.info(
             "왼쪽에서 내용을 입력하고 '부검 시작' 버튼을 눌러주세요. \n\n결과는 이곳에 표시됩니다."
