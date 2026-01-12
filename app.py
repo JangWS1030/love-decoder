@@ -10,11 +10,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# API 키 설정 (secrets.toml에서 로드)
-os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
-
-client = OpenAI()
-
 # API 호출 함수
 def call_love_decoder(user_text, model="gpt-5-nano"):
     
@@ -151,4 +146,5 @@ with col_result:
         else:
             st.warning("분석할 문자를 입력해주세요! 빈 화면을 분석할 순 없잖아요? 🤷")
     else:
+
         st.info("왼쪽에서 내용을 입력하고 '부검 시작' 버튼을 눌러주세요. \n\n결과는 이곳에 표시됩니다.")
