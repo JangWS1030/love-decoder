@@ -7,16 +7,18 @@ st.set_page_config(
     page_title="재결합 가능성 판독기",
     page_icon="💔",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
+# API 키 설정 (secrets.toml에서 로드)
 os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 
 client = OpenAI()
 
+
 # API 호출 함수
 def call_love_decoder(user_text, model="gpt-5-nano"):
-    
+
     system_instruction = """
 # Role (페르소나)
 당신은 연애 심리학계의 이단아, '희망고문 박멸 전문가'이자 '텍스트 부검의(Medical Examiner)'입니다.
@@ -47,39 +49,38 @@ def call_love_decoder(user_text, model="gpt-5-nano"):
     response = client.chat.completions.create(
         model=model,
         messages=[
-            {
-                "role": "developer", 
-                "content": system_instruction
-            },
-            {
-                "role": "user",
-                "content": user_text
-            }
+            {"role": "developer", "content": system_instruction},
+            {"role": "user", "content": user_text},
         ],
-        response_format={
-            "type": "text"
-        },
-        store=False
+        response_format={"type": "text"},
+        verbosity="medium",
+        reasoning_effort="low",
+        store=False,
     )
-    
+
     return response.choices[0].message.content
 
+
 # CSS 스타일 적용 (다크모드 문제 해결됨)
-st.markdown("""
+st.markdown(
+    """
 <style>
 .stTextArea textarea {
     font-size: 16px;
     /* background-color: #f0f2f6;  <-- 이 부분을 삭제하여 다크모드와 호환되게 수정 */
 }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 
 # 사이드바 구성
 with st.sidebar:
     st.title("💔 희망고문 박멸")
     st.markdown("---")
-    st.markdown("""
+    st.markdown(
+        """
     **👨‍⚕️ 담당 주치의: Dr. 팩트폭격기**
     
     당신의 전 애인이 보낸 문자에 
@@ -87,8 +88,11 @@ with st.sidebar:
     
     * 주의: 분석 결과가 너무 뼈를 때려서 
     순살이 될 수 있으니 마음의 준비를 하세요.
-    """)
-    st.info("💡 팁: 문맥을 위해 평소 상대방 말투나 상황을 같이 적어주면 더 정확해집니다.")
+    """
+    )
+    st.info(
+        "💡 팁: 문맥을 위해 평소 상대방 말투나 상황을 같이 적어주면 더 정확해집니다."
+    )
 
 # 메인 화면 구성
 col_header1, col_header2 = st.columns([1, 5])
@@ -97,7 +101,9 @@ with col_header1:
     st.markdown("# 💔")
 with col_header2:
     st.title("재결합 가능성 판독기")
-    st.caption("그 문자에 의미 부여하지 마세요. 텍스트 부검의가 팩트만 알려드립니다. (Model: gpt-5-nano)")
+    st.caption(
+        "그 문자에 의미 부여하지 마세요. 텍스트 부검의가 팩트만 알려드립니다. (Model: gpt-5-nano)"
+    )
 
 st.markdown("---")
 
@@ -107,48 +113,51 @@ col_input, col_result = st.columns([1, 1], gap="medium")
 # 왼쪽: 입력 컬럼
 with col_input:
     st.subheader("📩 문자 내용 입력")
-    
+
     # 예시 버튼들 (상태 관리를 위해 session_state 사용)
-    if 'user_text_input' not in st.session_state:
-        st.session_state['user_text_input'] = ""
+    if "user_text_input" not in st.session_state:
+        st.session_state["user_text_input"] = ""
 
     example_cols = st.columns(3)
     if example_cols[0].button("예시 1: 자니?"):
-        st.session_state['user_text_input'] = "자니? 그냥 갑자기 생각나서..."
+        st.session_state["user_text_input"] = "자니? 그냥 갑자기 생각나서..."
     if example_cols[1].button("예시 2: 잘 지내?"):
-        st.session_state['user_text_input'] = "오빠 잘 지내? 프사 바뀌었더라 ㅎㅎ"
+        st.session_state["user_text_input"] = "오빠 잘 지내? 프사 바뀌었더라 ㅎㅎ"
     if example_cols[2].button("예시 3: 뭐해?"):
-        st.session_state['user_text_input'] = "ㅋㅋ 머해? 술 한잔 하고 들어가는 길인데"
+        st.session_state["user_text_input"] = "ㅋㅋ 머해? 술 한잔 하고 들어가는 길인데"
 
     # 텍스트 입력창 (session_state와 연결)
     user_input_text = st.text_area(
-        "상대방의 문자를 복사해서 붙여넣으세요.", 
-        value=st.session_state['user_text_input'],
-        height=300, 
-        placeholder="예: 자니? 잘 지내지? 그냥 갑자기 생각나서... (여기에 붙여넣기)"
+        "상대방의 문자를 복사해서 붙여넣으세요.",
+        value=st.session_state["user_text_input"],
+        height=300,
+        placeholder="예: 자니? 잘 지내지? 그냥 갑자기 생각나서... (여기에 붙여넣기)",
     )
-    
-    # 입력값이 바뀌면 session_state 업데이트
-    if user_input_text != st.session_state['user_text_input']:
-        st.session_state['user_text_input'] = user_input_text
 
-    analyze_btn = st.button("🔍 텍스트 부검 시작", type="primary", use_container_width=True)
+    # 입력값이 바뀌면 session_state 업데이트
+    if user_input_text != st.session_state["user_text_input"]:
+        st.session_state["user_text_input"] = user_input_text
+
+    analyze_btn = st.button(
+        "🔍 텍스트 부검 시작", type="primary", use_container_width=True
+    )
 
 # 오른쪽: 결과 컬럼
 with col_result:
     st.subheader("📋 부검 결과 리포트")
-    
+
     if analyze_btn:
         if user_input_text.strip():
             with st.spinner("💉 텍스트 속 찌질함 추출 중..."):
                 # 실제 API 호출
                 result = call_love_decoder(user_input_text)
-                
+
             st.success("분석이 완료되었습니다!")
             with st.container(border=True):
                 st.markdown(result)
         else:
             st.warning("분석할 문자를 입력해주세요! 빈 화면을 분석할 순 없잖아요? 🤷")
     else:
-
-        st.info("왼쪽에서 내용을 입력하고 '부검 시작' 버튼을 눌러주세요. \n\n결과는 이곳에 표시됩니다.")
+        st.info(
+            "왼쪽에서 내용을 입력하고 '부검 시작' 버튼을 눌러주세요. \n\n결과는 이곳에 표시됩니다."
+        )
