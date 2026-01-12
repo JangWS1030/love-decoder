@@ -10,6 +10,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
+
+client = OpenAI()
+
 # API 호출 함수
 def call_love_decoder(user_text, model="gpt-5-nano"):
     
